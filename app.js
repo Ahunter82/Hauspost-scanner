@@ -1,5 +1,6 @@
 // ─── Config ───────────────────────────────────────────────────────────────────
 const STORAGE_KEY_CLIENT_ID = 'hauspost_client_id';
+const STORAGE_KEY_ANTHROPIC  = 'hauspost_gemini_key';
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const FOLDER_NAME = 'Hauspost';
 
@@ -226,6 +227,124 @@ async function generatePDF() {
   return pdf.output('blob');
 }
 
+// ─── AI Filename (Tesseract OCR – kostenlos, kein API-Key) ───────────────────
+async function analyzeDocumentWithAI() {
+  if (photos.length === 0) return null;
+
+  try {
+    showProgress('🔍 Text wird erkannt...');
+
+    // Load Tesseract if not already loaded
+    if (typeof Tesseract === 'undefined') {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js';
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    showProgress('🔍 OCR läuft... (kann 10–20 Sek. dauern)');
+
+    const result = await Tesseract.recognize(photos[0], 'deu', {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          const pct = Math.round(m.progress * 100);
+          showProgress(`🔍 OCR: ${pct}%`);
+        }
+      }
+    });
+
+    const text = result.data.text;
+    return extractFilenameFromText(text);
+  } catch (e) {
+    console.warn('OCR fehlgeschlagen:', e);
+    return null;
+  }
+}
+
+function extractFilenameFromText(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
+
+  // Extract date (DD.MM.YYYY or DD.MM.YY)
+  const dateMatch = text.match(/(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{2,4})/);
+  let datePart = '';
+  if (dateMatch) {
+    const d = dateMatch[1].padStart(2, '0');
+    const m = dateMatch[2].padStart(2, '0');
+    const y = dateMatch[3].length === 2 ? '20' + dateMatch[3] : dateMatch[3];
+    datePart = `${d}-${m}-${y}`;
+  } else {
+    const now = new Date();
+    datePart = `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}`;
+  }
+
+  // Extract sender – usually first meaningful line
+  let sender = lines[0] || 'Unbekannt';
+  sender = sender.substring(0, 20);
+
+  // Extract subject – look for keywords
+  const subjectKeywords = ['Betreff', 'Re:', 'Ihr', 'Kündigung', 'Rechnung', 'Mahnung', 'Bescheid', 'Vertrag', 'Antrag', 'Mitteilung'];
+  let subject = '';
+  for (const line of lines) {
+    if (subjectKeywords.some(k => line.toLowerCase().includes(k.toLowerCase()))) {
+      subject = line.replace(/^Betreff[:\s]*/i, '').substring(0, 30);
+      break;
+    }
+  }
+  if (!subject) subject = lines[1] || 'Dokument';
+  subject = subject.substring(0, 30);
+
+  // Clean and combine
+  const clean = str => str
+    .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue')
+    .replace(/Ä/g,'Ae').replace(/Ö/g,'Oe').replace(/Ü/g,'Ue')
+    .replace(/ß/g,'ss')
+    .replace(/[^a-zA-Z0-9\-_]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '');
+
+  return `${clean(sender)}_${clean(subject)}_${datePart}`;
+}
+
+function showFilenameDialog(suggestedName) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;
+      display:flex;align-items:center;justify-content:center;padding:20px;
+    `;
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.2)">
+        <div style="font-size:1.2rem;font-weight:700;margin-bottom:6px;color:#1a73e8">🤖 KI-Vorschlag</div>
+        <div style="font-size:0.85rem;color:#666;margin-bottom:14px">Dateiname bearbeiten oder so übernehmen:</div>
+        <input id="filename-input" value="${suggestedName}" style="
+          width:100%;box-sizing:border-box;padding:10px 14px;border:2px solid #1a73e8;
+          border-radius:8px;font-size:0.95rem;outline:none;margin-bottom:16px;
+        " />
+        <div style="display:flex;gap:10px">
+          <button id="fn-cancel" style="flex:1;padding:10px;border:2px solid #ddd;background:#fff;border-radius:8px;font-size:0.95rem;cursor:pointer">Abbrechen</button>
+          <button id="fn-ok" style="flex:2;padding:10px;background:#1a73e8;color:#fff;border:none;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer">✓ Hochladen</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    const input = overlay.querySelector('#filename-input');
+    input.focus();
+    input.select();
+    overlay.querySelector('#fn-ok').onclick = () => {
+      const val = input.value.trim().replace(/[^a-zA-Z0-9_\-]/g, '_') || suggestedName;
+      document.body.removeChild(overlay);
+      resolve(val);
+    };
+    overlay.querySelector('#fn-cancel').onclick = () => {
+      document.body.removeChild(overlay);
+      resolve(null);
+    };
+  });
+}
+
 // ─── Google Drive Upload ──────────────────────────────────────────────────────
 async function uploadToDrive() {
   if (!accessToken) {
@@ -244,11 +363,24 @@ async function uploadToDrive() {
   try {
     const pdfBlob = await generatePDF();
 
+    // Try AI filename
+    let filename;
+    const aiName = await analyzeDocumentWithAI();
+    if (aiName) {
+      hideProgress();
+      const confirmed = await showFilenameDialog(aiName + '.pdf');
+      if (!confirmed) return;
+      filename = confirmed.endsWith('.pdf') ? confirmed : confirmed + '.pdf';
+      showProgress('Wird hochgeladen...');
+    } else {
+      filename = buildFilename();
+      showProgress('Wird hochgeladen...');
+    }
+
     showProgress('Hauspost-Ordner wird gesucht...');
     const folder = await getOrCreateFolder();
 
     showProgress('Wird hochgeladen...');
-    const filename = buildFilename();
 
     const metadata = {
       name: filename,
@@ -286,7 +418,6 @@ async function uploadToDrive() {
 
   } catch (err) {
     hideProgress();
-    // Token may have expired – prompt re-auth
     if (err.message?.includes('401') || err.message?.includes('invalid_token')) {
       accessToken = null;
       showToast('Sitzung abgelaufen – bitte erneut anmelden', 'warning', 4000);
