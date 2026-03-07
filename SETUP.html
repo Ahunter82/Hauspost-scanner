@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Einrichtung – Hauspost Scanner</title>
+  <style>
+    body { font-family: Roboto, Arial, sans-serif; max-width: 680px; margin: 0 auto; padding: 24px 20px; color: #202124; line-height: 1.7; }
+    h1 { color: #1a73e8; margin-bottom: 8px; }
+    h2 { margin-top: 32px; color: #333; border-bottom: 2px solid #e8eaed; padding-bottom: 6px; }
+    .step { background: #f8f9fa; border-left: 4px solid #1a73e8; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+    .step strong { color: #1a73e8; }
+    code { background: #e8eaed; padding: 2px 8px; border-radius: 4px; font-size: 0.9rem; }
+    .tip { background: #e8f5e9; border-left: 4px solid #34a853; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+    a { color: #1a73e8; }
+    .back { display: inline-block; margin-bottom: 24px; text-decoration: none; color: #1a73e8; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<a class="back" href="index.html">← Zurück zur App</a>
+
+<h1>📬 Hauspost Scanner – Einrichtung</h1>
+<p>Damit die App Dateien in deinen Google Drive hochladen kann, brauchst du eine <strong>Google OAuth Client-ID</strong>. Das klingt kompliziert, ist aber in 5 Minuten erledigt – und kostenlos.</p>
+
+<h2>Schritt 1 – Google Cloud Projekt erstellen</h2>
+<div class="step">
+  <strong>1.</strong> Öffne <a href="https://console.cloud.google.com/" target="_blank">console.cloud.google.com</a><br/>
+  <strong>2.</strong> Klicke oben auf <em>"Projekt auswählen"</em> → <em>"Neues Projekt"</em><br/>
+  <strong>3.</strong> Name z.B. <code>Hauspost Scanner</code> → <em>"Erstellen"</em>
+</div>
+
+<h2>Schritt 2 – Google Drive API aktivieren</h2>
+<div class="step">
+  <strong>1.</strong> Gehe zu <em>"APIs & Dienste"</em> → <em>"Bibliothek"</em><br/>
+  <strong>2.</strong> Suche nach <code>Google Drive API</code><br/>
+  <strong>3.</strong> Klicke darauf → <em>"Aktivieren"</em>
+</div>
+
+<h2>Schritt 3 – OAuth Zustimmungsbildschirm konfigurieren</h2>
+<div class="step">
+  <strong>1.</strong> Gehe zu <em>"APIs & Dienste"</em> → <em>"OAuth-Zustimmungsbildschirm"</em><br/>
+  <strong>2.</strong> Wähle <em>"Extern"</em> → <em>"Erstellen"</em><br/>
+  <strong>3.</strong> App-Name: <code>Hauspost Scanner</code>, Support-E-Mail: deine Gmail<br/>
+  <strong>4.</strong> Klicke durch bis <em>"Speichern und fortfahren"</em><br/>
+  <strong>5.</strong> Unter <em>"Testnutzer"</em>: füge deine eigene Gmail-Adresse hinzu
+</div>
+
+<h2>Schritt 4 – OAuth Client-ID erstellen</h2>
+<div class="step">
+  <strong>1.</strong> Gehe zu <em>"APIs & Dienste"</em> → <em>"Anmeldedaten"</em><br/>
+  <strong>2.</strong> Klicke <em>"Anmeldedaten erstellen"</em> → <em>"OAuth-Client-ID"</em><br/>
+  <strong>3.</strong> Anwendungstyp: <strong>Webanwendung</strong><br/>
+  <strong>4.</strong> Name: <code>Hauspost Scanner Web</code><br/>
+  <strong>5.</strong> Unter <em>"Autorisierte JavaScript-Quellen"</em> add:<br/>
+  &nbsp;&nbsp;→ <code>https://DEIN-USERNAME.github.io</code> (für GitHub Pages)<br/>
+  &nbsp;&nbsp;→ <code>http://localhost:8000</code> (zum lokalen Testen)<br/>
+  <strong>6.</strong> Klicke <em>"Erstellen"</em><br/>
+  <strong>7.</strong> Kopiere die <strong>Client-ID</strong> (endet auf <code>.apps.googleusercontent.com</code>)
+</div>
+
+<h2>Schritt 5 – App auf GitHub Pages hosten</h2>
+<div class="step">
+  <strong>1.</strong> Erstelle ein kostenloses Konto auf <a href="https://github.com" target="_blank">github.com</a><br/>
+  <strong>2.</strong> Erstelle ein neues Repository namens <code>hauspost-scanner</code><br/>
+  <strong>3.</strong> Lade alle App-Dateien hoch (index.html, style.css, app.js, ...)<br/>
+  <strong>4.</strong> Gehe zu <em>Settings → Pages</em> → Source: <em>main branch</em><br/>
+  <strong>5.</strong> Deine App ist dann erreichbar unter:<br/>
+  &nbsp;&nbsp;<code>https://DEIN-USERNAME.github.io/hauspost-scanner</code><br/>
+  <strong>6.</strong> Diese URL auf deinem Handy in Chrome öffnen → <em>"Zum Startbildschirm hinzufügen"</em>
+</div>
+
+<h2>Schritt 6 – Client-ID in der App eintragen</h2>
+<div class="step">
+  <strong>1.</strong> Öffne die App → du siehst den Einrichtungsbildschirm<br/>
+  <strong>2.</strong> Füge deine Client-ID ein → <em>"Speichern & starten"</em><br/>
+  <strong>3.</strong> Fertig! Die Client-ID wird lokal im Browser gespeichert.
+</div>
+
+<div class="tip">
+  <strong>Tipp:</strong> Der "Hauspost"-Ordner wird automatisch in deinem Google Drive erstellt, wenn du zum ersten Mal ein PDF hochlädst. Du musst nichts manuell anlegen.
+</div>
+
+<h2>Lokales Testen (optional)</h2>
+<div class="step">
+  Falls du Python installiert hast, kannst du die App lokal testen:<br/>
+  <code>python serve.py</code><br/>
+  Dann im Browser öffnen: <code>http://localhost:8000</code>
+</div>
+
+</body>
+</html>
