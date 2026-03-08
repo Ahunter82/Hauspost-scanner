@@ -1,15 +1,19 @@
 // ─── Config ───────────────────────────────────────────────────────────────────
-const STORAGE_KEY_CLIENT_ID = 'hauspost_client_id';
-const STORAGE_KEY_ANTHROPIC  = 'hauspost_gemini_key';
+const STORAGE_KEY_CLIENT_ID  = 'hauspost_client_id';
+const STORAGE_KEY_FOLDER_ID  = 'hauspost_folder_id';
+const STORAGE_KEY_FOLDER_NAME = 'hauspost_folder_name';
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
-const FOLDER_NAME = 'Hauspost';
+const PICKER_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
+const DEFAULT_FOLDER_NAME = 'Hauspost';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 let photos = [];          // Array of base64 data URLs
 let accessToken = null;
 let tokenClient = null;
+let pickerTokenClient = null;
 let selectedType = 'Brief';
-let folderId = null;      // Cached Google Drive folder ID
+let folderId = localStorage.getItem(STORAGE_KEY_FOLDER_ID) || null;
+let folderName = localStorage.getItem(STORAGE_KEY_FOLDER_NAME) || DEFAULT_FOLDER_NAME;
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 window.addEventListener('load', () => {
@@ -75,9 +79,9 @@ function handleTokenResponse(response) {
     return;
   }
   accessToken = response.access_token;
-  folderId = null; // Reset folder cache on new token
   document.getElementById('login-btn').style.display = 'none';
   document.getElementById('user-badge').style.display = 'flex';
+  updateFolderDisplay();
   showToast('Mit Google Drive verbunden ✓', 'success');
 }
 
@@ -94,10 +98,60 @@ function signOut() {
     google.accounts.oauth2.revoke(accessToken);
   }
   accessToken = null;
-  folderId = null;
   document.getElementById('login-btn').style.display = 'flex';
   document.getElementById('user-badge').style.display = 'none';
   showToast('Abgemeldet', 'info');
+}
+
+// ─── Ordnerauswahl ────────────────────────────────────────────────────────────
+function updateFolderDisplay() {
+  const btn = document.getElementById('folder-btn');
+  if (btn) btn.textContent = `📁 ${folderName}`;
+}
+
+async function openFolderPicker() {
+  if (!accessToken) {
+    showToast('Bitte zuerst anmelden', 'warning');
+    return;
+  }
+
+  const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID);
+
+  // Picker API laden falls nötig
+  if (typeof google.picker === 'undefined') {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://apis.google.com/js/api.js';
+      s.onload = () => gapi.load('picker', resolve);
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  const picker = new google.picker.PickerBuilder()
+    .addView(new google.picker.DocsView(google.picker.ViewId.FOLDERS)
+      .setIncludeFolders(true)
+      .setSelectFolderEnabled(true)
+      .setMimeTypes('application/vnd.google-apps.folder'))
+    .setOAuthToken(accessToken)
+    .setDeveloperKey('')   // optional, ohne API-Key funktioniert Picker auch
+    .setCallback(pickerCallback)
+    .setTitle('Ziel-Ordner auswählen')
+    .build();
+
+  picker.setVisible(true);
+}
+
+function pickerCallback(data) {
+  if (data.action === google.picker.Action.PICKED) {
+    const doc = data.docs[0];
+    folderId = doc.id;
+    folderName = doc.name;
+    localStorage.setItem(STORAGE_KEY_FOLDER_ID, folderId);
+    localStorage.setItem(STORAGE_KEY_FOLDER_NAME, folderName);
+    updateFolderDisplay();
+    showToast(`Ordner gewählt: ${folderName}`, 'success');
+  }
 }
 
 // ─── Camera / Photos ──────────────────────────────────────────────────────────
@@ -611,11 +665,12 @@ async function uploadToDrive() {
 }
 
 async function getOrCreateFolder() {
+  // Nutzer hat Ordner bereits gewählt → direkt verwenden
   if (folderId) return folderId;
 
-  // Search for existing folder
+  // Kein Ordner gewählt → "Hauspost"-Ordner suchen oder anlegen
   const query = encodeURIComponent(
-    `name='${FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`
+    `name='${DEFAULT_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`
   );
   const searchRes = await fetch(
     `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)`,
@@ -628,10 +683,14 @@ async function getOrCreateFolder() {
 
   if (data.files && data.files.length > 0) {
     folderId = data.files[0].id;
+    folderName = data.files[0].name;
+    localStorage.setItem(STORAGE_KEY_FOLDER_ID, folderId);
+    localStorage.setItem(STORAGE_KEY_FOLDER_NAME, folderName);
+    updateFolderDisplay();
     return folderId;
   }
 
-  // Create folder
+  // Neu anlegen
   const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
     method: 'POST',
     headers: {
@@ -639,7 +698,7 @@ async function getOrCreateFolder() {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      name: FOLDER_NAME,
+      name: DEFAULT_FOLDER_NAME,
       mimeType: 'application/vnd.google-apps.folder',
     }),
   });
@@ -648,6 +707,10 @@ async function getOrCreateFolder() {
 
   const folder = await createRes.json();
   folderId = folder.id;
+  folderName = DEFAULT_FOLDER_NAME;
+  localStorage.setItem(STORAGE_KEY_FOLDER_ID, folderId);
+  localStorage.setItem(STORAGE_KEY_FOLDER_NAME, folderName);
+  updateFolderDisplay();
   return folderId;
 }
 

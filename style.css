@@ -132,6 +132,21 @@ header {
   display: inline-block;
 }
 
+.btn-folder {
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.4);
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 12px;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.btn-folder:hover { background: rgba(255,255,255,0.3); }
+
 .btn-signout {
   background: none;
   border: none;
