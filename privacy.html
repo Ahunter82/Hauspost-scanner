@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Datenschutzerklärung – Hauspost Scanner</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+      background: #f1f3f4;
+      color: #202124;
+      padding: 24px 16px;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 16px;
+      padding: 40px 32px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 { font-size: 1.8rem; color: #1a73e8; margin-bottom: 8px; }
+    .subtitle { color: #5f6368; font-size: 0.9rem; margin-bottom: 32px; }
+    h2 { font-size: 1.1rem; margin: 28px 0 10px; color: #202124; }
+    p, li { font-size: 0.95rem; line-height: 1.7; color: #3c4043; }
+    ul { padding-left: 20px; margin-top: 8px; }
+    li { margin-bottom: 6px; }
+    .highlight {
+      background: #e8f0fe;
+      border-left: 4px solid #1a73e8;
+      padding: 12px 16px;
+      border-radius: 0 8px 8px 0;
+      margin: 16px 0;
+    }
+    a { color: #1a73e8; }
+    footer { margin-top: 40px; font-size: 0.85rem; color: #5f6368; border-top: 1px solid #dadce0; padding-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Datenschutzerklärung</h1>
+    <p class="subtitle">Hauspost Scanner – zuletzt aktualisiert: März 2026</p>
+
+    <div class="highlight">
+      <strong>Kurzfassung:</strong> Hauspost Scanner speichert keine Daten auf eigenen Servern.
+      Alle Dokumente werden direkt in deinem eigenen Google Drive gespeichert.
+    </div>
+
+    <h2>1. Wer ist verantwortlich?</h2>
+    <p>
+      Hauspost Scanner ist eine private Web-App. Bei Fragen zum Datenschutz kannst du dich per
+      GitHub Issue melden: <a href="https://github.com/Ahunter82/Hauspost-scanner/issues" target="_blank">
+      github.com/Ahunter82/Hauspost-scanner</a>
+    </p>
+
+    <h2>2. Welche Daten werden verarbeitet?</h2>
+    <ul>
+      <li><strong>Fotos/Scans:</strong> Werden nur lokal im Browser zwischengespeichert (RAM) und nach dem Upload sofort gelöscht. Sie verlassen dein Gerät ausschließlich in Richtung deines eigenen Google Drive.</li>
+      <li><strong>Google-Konto:</strong> Zur Anmeldung und zum Hochladen in Google Drive wird OAuth 2.0 genutzt. Wir speichern weder dein Passwort noch deine E-Mail-Adresse.</li>
+      <li><strong>Einstellungen:</strong> Deine gewählte Google OAuth Client-ID und der Ziel-Ordner werden lokal im Browser (localStorage) gespeichert – nur auf deinem Gerät.</li>
+    </ul>
+
+    <h2>3. Google Drive Zugriff</h2>
+    <p>
+      Die App fordert ausschließlich den Scope <code>drive.file</code> an. Das bedeutet:
+    </p>
+    <ul>
+      <li>Die App kann nur Dateien lesen und schreiben, die sie selbst erstellt hat.</li>
+      <li>Zugriff auf andere Dateien in deinem Google Drive ist technisch nicht möglich.</li>
+      <li>Du kannst den Zugriff jederzeit unter <a href="https://myaccount.google.com/permissions" target="_blank">myaccount.google.com/permissions</a> widerrufen.</li>
+    </ul>
+
+    <h2>4. Keine Weitergabe an Dritte</h2>
+    <p>
+      Es werden keinerlei Daten an Dritte weitergegeben. Es existiert kein Backend-Server,
+      keine Datenbank und keine Analyse- oder Tracking-Software.
+    </p>
+
+    <h2>5. Cookies und lokaler Speicher</h2>
+    <p>
+      Die App verwendet <strong>keine Cookies</strong>. Im localStorage des Browsers werden
+      gespeichert:
+    </p>
+    <ul>
+      <li>Google OAuth Client-ID (von dir selbst eingetragen)</li>
+      <li>Gewählter Google Drive Ordner (Name und ID)</li>
+    </ul>
+    <p>Diese Daten verlassen dein Gerät nicht und können jederzeit über die Browser-Einstellungen gelöscht werden.</p>
+
+    <h2>6. OCR-Texterkennung</h2>
+    <p>
+      Die Texterkennung (OCR) zur automatischen Dateibenennung läuft vollständig lokal im Browser
+      mittels Tesseract.js. Es werden keine Bilddaten an externe Server gesendet.
+    </p>
+
+    <h2>7. Deine Rechte</h2>
+    <p>Du hast das Recht auf Auskunft, Berichtigung und Löschung deiner Daten. Da die App keine
+    Daten auf eigenen Servern speichert, beschränkt sich das auf die lokalen Browser-Daten,
+    die du jederzeit selbst löschen kannst.</p>
+
+    <h2>8. Änderungen dieser Datenschutzerklärung</h2>
+    <p>Änderungen werden in diesem Dokument veröffentlicht. Das Datum der letzten Aktualisierung
+    steht oben auf dieser Seite.</p>
+
+    <footer>
+      Hauspost Scanner · <a href="https://ahunter82.github.io/Hauspost-scanner/">Zurück zur App</a> ·
+      <a href="https://github.com/Ahunter82/Hauspost-scanner">GitHub</a>
+    </footer>
+  </div>
+</body>
+</html>
