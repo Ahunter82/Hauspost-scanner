@@ -227,14 +227,144 @@ async function generatePDF() {
   return pdf.output('blob');
 }
 
-// ─── AI Filename (Tesseract OCR – kostenlos, kein API-Key) ───────────────────
+// ─── Keyword-Datenbank für intelligente Dateibenennung ───────────────────────
+
+const SENDER_KEYWORDS = [
+  // Energie & Versorger
+  { keys: ['stadtwerke'],                       label: 'Stadtwerke' },
+  { keys: ['e.on', 'eon energie'],              label: 'EON' },
+  { keys: ['rwe'],                              label: 'RWE' },
+  { keys: ['vattenfall'],                       label: 'Vattenfall' },
+  { keys: ['enbw'],                             label: 'EnBW' },
+  { keys: ['innogy'],                           label: 'Innogy' },
+  { keys: ['eprimo'],                           label: 'Eprimo' },
+  { keys: ['naturstrom'],                       label: 'Naturstrom' },
+  { keys: ['gas', 'gasversorgung', 'erdgas'],   label: 'Gas' },
+  { keys: ['strom', 'stromversorgung'],         label: 'Strom' },
+  { keys: ['wasser', 'wasserwerk'],             label: 'Wasser' },
+  // Telekommunikation
+  { keys: ['deutsche telekom', 'telekom'],      label: 'Telekom' },
+  { keys: ['vodafone'],                         label: 'Vodafone' },
+  { keys: ['o2', 'telefonica'],                 label: 'O2' },
+  { keys: ['1&1', '1und1'],                     label: '1und1' },
+  { keys: ['freenet'],                          label: 'Freenet' },
+  { keys: ['congstar'],                         label: 'Congstar' },
+  { keys: ['klarmobil'],                        label: 'Klarmobil' },
+  // Banken & Finanzen
+  { keys: ['sparkasse'],                        label: 'Sparkasse' },
+  { keys: ['volksbank', 'raiffeisenbank'],      label: 'Volksbank' },
+  { keys: ['deutsche bank'],                    label: 'DeutscheBank' },
+  { keys: ['commerzbank'],                      label: 'Commerzbank' },
+  { keys: ['ing', 'ing-diba'],                  label: 'ING' },
+  { keys: ['dkb', 'deutsche kreditbank'],       label: 'DKB' },
+  { keys: ['n26'],                              label: 'N26' },
+  { keys: ['comdirect'],                        label: 'Comdirect' },
+  { keys: ['postbank'],                         label: 'Postbank' },
+  { keys: ['targobank'],                        label: 'Targobank' },
+  { keys: ['norisbank'],                        label: 'Norisbank' },
+  // Versicherungen
+  { keys: ['allianz'],                          label: 'Allianz' },
+  { keys: ['aok'],                              label: 'AOK' },
+  { keys: ['barmer'],                           label: 'Barmer' },
+  { keys: ['techniker krankenkasse', 'tk'],     label: 'TK' },
+  { keys: ['dak'],                              label: 'DAK' },
+  { keys: ['huk-coburg', 'huk coburg'],         label: 'HUK' },
+  { keys: ['ergo'],                             label: 'ERGO' },
+  { keys: ['generali'],                         label: 'Generali' },
+  { keys: ['debeka'],                           label: 'Debeka' },
+  { keys: ['signal iduna'],                     label: 'SignalIduna' },
+  { keys: ['zurich'],                           label: 'Zurich' },
+  { keys: ['gothaer'],                          label: 'Gothaer' },
+  // Behörden & Ämter
+  { keys: ['finanzamt'],                        label: 'Finanzamt' },
+  { keys: ['finanzministerium'],                label: 'Finanzministerium' },
+  { keys: ['bundeszentralamt'],                 label: 'Bundeszentralamt' },
+  { keys: ['jobcenter'],                        label: 'Jobcenter' },
+  { keys: ['arbeitsagentur', 'bundesagentur für arbeit'], label: 'Arbeitsagentur' },
+  { keys: ['rentenversicherung', 'drv'],        label: 'Rentenversicherung' },
+  { keys: ['sozialversicherung'],               label: 'Sozialversicherung' },
+  { keys: ['einwohnermeldeamt', 'bürgeramt'],   label: 'Buergeramt' },
+  { keys: ['standesamt'],                       label: 'Standesamt' },
+  { keys: ['ordnungsamt'],                      label: 'Ordnungsamt' },
+  { keys: ['amtsgericht', 'landgericht', 'gericht'], label: 'Gericht' },
+  { keys: ['staatsanwaltschaft'],               label: 'Staatsanwaltschaft' },
+  { keys: ['gerichtsvollzieher'],               label: 'Gerichtsvollzieher' },
+  { keys: ['rundfunk', 'ard zdf', 'beitragsservice'], label: 'Rundfunkbeitrag' },
+  { keys: ['kfz-zulassungsstelle', 'zulassungsstelle'], label: 'Zulassungsstelle' },
+  { keys: ['hauptzollamt', 'zollamt'],          label: 'Zoll' },
+  { keys: ['bundesamt'],                        label: 'Bundesamt' },
+  // Vermietung & Immobilien
+  { keys: ['hausverwaltung'],                   label: 'Hausverwaltung' },
+  { keys: ['immobilien'],                       label: 'Immobilien' },
+  { keys: ['wohnungsbaugesellschaft', 'wohnungsgesellschaft'], label: 'Wohnungsbaugesellschaft' },
+  { keys: ['vonovia'],                          label: 'Vonovia' },
+  { keys: ['deutsche wohnen'],                  label: 'DeutscheWohnen' },
+  { keys: ['saga'],                             label: 'SAGA' },
+  // Handel & Versand
+  { keys: ['amazon'],                           label: 'Amazon' },
+  { keys: ['ebay'],                             label: 'eBay' },
+  { keys: ['otto'],                             label: 'Otto' },
+  { keys: ['zalando'],                          label: 'Zalando' },
+  { keys: ['mediamarkt', 'media markt'],        label: 'MediaMarkt' },
+  { keys: ['saturn'],                           label: 'Saturn' },
+  { keys: ['ikea'],                             label: 'IKEA' },
+  // Paketdienste
+  { keys: ['dhl'],                              label: 'DHL' },
+  { keys: ['hermes'],                           label: 'Hermes' },
+  { keys: ['dpd'],                              label: 'DPD' },
+  { keys: ['ups'],                              label: 'UPS' },
+  { keys: ['fedex'],                            label: 'FedEx' },
+  { keys: ['gls'],                              label: 'GLS' },
+  // Sonstiges
+  { keys: ['schufa'],                           label: 'SCHUFA' },
+  { keys: ['inkasso', 'mahnung', 'forderung'],  label: 'Inkasso' },
+  { keys: ['rechtsanwalt', 'kanzlei'],          label: 'Rechtsanwalt' },
+  { keys: ['notar'],                            label: 'Notar' },
+  { keys: ['steuerberater'],                    label: 'Steuerberater' },
+  { keys: ['krankenkasse'],                     label: 'Krankenkasse' },
+];
+
+const DOCTYPE_KEYWORDS = [
+  { keys: ['rechnung', 'invoice', 'rechnungsnr', 'rechnungsnummer'], label: 'Rechnung' },
+  { keys: ['mahnung', 'zahlungserinnerung', 'letzte erinnerung'],    label: 'Mahnung' },
+  { keys: ['kündigung', 'kündige'],                                   label: 'Kuendigung' },
+  { keys: ['vertrag', 'vertragsnummer'],                              label: 'Vertrag' },
+  { keys: ['bescheid'],                                               label: 'Bescheid' },
+  { keys: ['steuerbescheid', 'einkommensteuerbescheid'],              label: 'Steuerbescheid' },
+  { keys: ['nebenkostenabrechnung', 'betriebskostenabrechnung', 'nebenkosten'], label: 'Nebenkostenabrechnung' },
+  { keys: ['jahresabrechnung', 'jahresrechnung'],                     label: 'Jahresabrechnung' },
+  { keys: ['kontoauszug'],                                            label: 'Kontoauszug' },
+  { keys: ['abrechnung'],                                             label: 'Abrechnung' },
+  { keys: ['angebot'],                                                label: 'Angebot' },
+  { keys: ['antrag'],                                                 label: 'Antrag' },
+  { keys: ['mitteilung', 'benachrichtigung'],                         label: 'Mitteilung' },
+  { keys: ['bestätigung', 'bestaetigung'],                            label: 'Bestaetigung' },
+  { keys: ['einladung'],                                              label: 'Einladung' },
+  { keys: ['lieferschein'],                                           label: 'Lieferschein' },
+  { keys: ['quittung'],                                               label: 'Quittung' },
+  { keys: ['gutschrift', 'erstattung'],                               label: 'Gutschrift' },
+  { keys: ['mahnbescheid'],                                           label: 'Mahnbescheid' },
+  { keys: ['vollmacht'],                                              label: 'Vollmacht' },
+  { keys: ['zeugnis'],                                                label: 'Zeugnis' },
+  { keys: ['attest', 'bescheinigung'],                                label: 'Bescheinigung' },
+  { keys: ['protokoll'],                                              label: 'Protokoll' },
+  { keys: ['mietvertrag'],                                            label: 'Mietvertrag' },
+  { keys: ['widerspruch'],                                            label: 'Widerspruch' },
+  { keys: ['klage'],                                                  label: 'Klage' },
+  { keys: ['urteil'],                                                 label: 'Urteil' },
+  { keys: ['pfändung'],                                               label: 'Pfaendung' },
+  { keys: ['inkassoschreiben'],                                       label: 'Inkasso' },
+  { keys: ['paketbenachrichtigung', 'paketkarte'],                    label: 'Paket' },
+  { keys: ['lohnabrechnung', 'gehaltsabrechnung', 'entgeltabrechnung'], label: 'Gehaltsabrechnung' },
+];
+
+// ─── OCR + intelligente Dateibenennung ───────────────────────────────────────
 async function analyzeDocumentWithAI() {
   if (photos.length === 0) return null;
 
   try {
     showProgress('🔍 Text wird erkannt...');
 
-    // Load Tesseract if not already loaded
     if (typeof Tesseract === 'undefined') {
       await new Promise((resolve, reject) => {
         const s = document.createElement('script');
@@ -265,38 +395,90 @@ async function analyzeDocumentWithAI() {
 }
 
 function extractFilenameFromText(text) {
+  const lower = text.toLowerCase();
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
 
-  // Extract date (DD.MM.YYYY or DD.MM.YY)
-  const dateMatch = text.match(/(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{2,4})/);
+  // ── 1. Datum ermitteln ──────────────────────────────────────────────────
+  // Suche nach deutschem Datum: "15. März 2026", "15.03.2026", "2026-03-15"
+  const MONTHS = {
+    januar:1, februar:2, märz:3, maerz:3, april:4, mai:5, juni:6,
+    juli:7, august:8, september:9, oktober:10, november:11, dezember:12
+  };
   let datePart = '';
-  if (dateMatch) {
-    const d = dateMatch[1].padStart(2, '0');
-    const m = dateMatch[2].padStart(2, '0');
-    const y = dateMatch[3].length === 2 ? '20' + dateMatch[3] : dateMatch[3];
-    datePart = `${d}-${m}-${y}`;
-  } else {
-    const now = new Date();
-    datePart = `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}`;
+
+  const longDateMatch = lower.match(/(\d{1,2})\.\s*(januar|februar|märz|maerz|april|mai|juni|juli|august|september|oktober|november|dezember)\s*(\d{4})/);
+  if (longDateMatch) {
+    const d = longDateMatch[1].padStart(2, '0');
+    const m = String(MONTHS[longDateMatch[2]]).padStart(2, '0');
+    datePart = `${longDateMatch[3]}-${m}-${d}`;
   }
 
-  // Extract sender – usually first meaningful line
-  let sender = lines[0] || 'Unbekannt';
-  sender = sender.substring(0, 20);
+  if (!datePart) {
+    const shortMatch = text.match(/(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{2,4})/);
+    if (shortMatch) {
+      const d = shortMatch[1].padStart(2, '0');
+      const m = shortMatch[2].padStart(2, '0');
+      const y = shortMatch[3].length === 2 ? '20' + shortMatch[3] : shortMatch[3];
+      // Plausibilitätscheck: Monat 1–12, Tag 1–31
+      if (parseInt(m) <= 12 && parseInt(d) <= 31) {
+        datePart = `${y}-${m}-${d}`;
+      }
+    }
+  }
 
-  // Extract subject – look for keywords
-  const subjectKeywords = ['Betreff', 'Re:', 'Ihr', 'Kündigung', 'Rechnung', 'Mahnung', 'Bescheid', 'Vertrag', 'Antrag', 'Mitteilung'];
-  let subject = '';
-  for (const line of lines) {
-    if (subjectKeywords.some(k => line.toLowerCase().includes(k.toLowerCase()))) {
-      subject = line.replace(/^Betreff[:\s]*/i, '').substring(0, 30);
+  if (!datePart) {
+    const isoMatch = text.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) datePart = `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+  }
+
+  if (!datePart) {
+    const now = new Date();
+    datePart = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  }
+
+  // ── 2. Absender erkennen ────────────────────────────────────────────────
+  let senderLabel = '';
+  for (const entry of SENDER_KEYWORDS) {
+    if (entry.keys.some(k => lower.includes(k))) {
+      senderLabel = entry.label;
       break;
     }
   }
-  if (!subject) subject = lines[1] || 'Dokument';
-  subject = subject.substring(0, 30);
 
-  // Clean and combine
+  // Fallback: erste nicht-leere Zeile die kein Datum ist
+  if (!senderLabel) {
+    for (const line of lines.slice(0, 5)) {
+      if (!/^\d/.test(line) && line.length > 3 && line.length < 40) {
+        senderLabel = line.substring(0, 25);
+        break;
+      }
+    }
+  }
+  if (!senderLabel) senderLabel = 'Unbekannt';
+
+  // ── 3. Dokumenttyp erkennen ─────────────────────────────────────────────
+  let docLabel = '';
+  for (const entry of DOCTYPE_KEYWORDS) {
+    if (entry.keys.some(k => lower.includes(k))) {
+      docLabel = entry.label;
+      break;
+    }
+  }
+
+  // Fallback auf gewählten Typ
+  if (!docLabel) docLabel = selectedType || 'Dokument';
+
+  // ── 4. Betrag extrahieren (optional, nur bei Rechnungen) ────────────────
+  let amountPart = '';
+  if (docLabel === 'Rechnung' || docLabel === 'Mahnung' || docLabel === 'Abrechnung') {
+    const amountMatch = text.match(/(\d{1,4}[.,]\d{2})\s*€|€\s*(\d{1,4}[.,]\d{2})/);
+    if (amountMatch) {
+      const raw = (amountMatch[1] || amountMatch[2]).replace(',', '.');
+      amountPart = `_${raw}EUR`;
+    }
+  }
+
+  // ── 5. Zusammensetzen & bereinigen ─────────────────────────────────────
   const clean = str => str
     .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue')
     .replace(/Ä/g,'Ae').replace(/Ö/g,'Oe').replace(/Ü/g,'Ue')
@@ -305,7 +487,7 @@ function extractFilenameFromText(text) {
     .replace(/_+/g, '_')
     .replace(/^_|_$/g, '');
 
-  return `${clean(sender)}_${clean(subject)}_${datePart}`;
+  return `${clean(docLabel)}_${clean(senderLabel)}${amountPart}_${datePart}`;
 }
 
 function showFilenameDialog(suggestedName) {
