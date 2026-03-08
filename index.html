@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Hauspost Scanner</title>
+  <title>Hauspost Scanner – Briefe & Post als PDF in Google Drive speichern</title>
+  <meta name="description" content="Hauspost Scanner: Briefe, Rechnungen und Post mit dem Smartphone fotografieren und automatisch als PDF in Google Drive speichern." />
+  <meta name="google-site-verification" content="7768f16cd80c6bfe" />
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#1a73e8" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -13,6 +15,22 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
+
+  <!-- ÖFFENTLICHE LANDING-SEKTION (für Google-Crawler + nicht eingeloggte Nutzer) -->
+  <noscript>
+    <div style="font-family:sans-serif;max-width:600px;margin:40px auto;padding:24px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
+      <h1 style="color:#1a73e8">📬 Hauspost Scanner</h1>
+      <p style="margin:12px 0">Briefe, Rechnungen und Post mit dem Smartphone fotografieren und automatisch als PDF in Google Drive speichern.</p>
+      <p><a href="privacy.html" style="color:#1a73e8">Datenschutzerklärung</a></p>
+    </div>
+  </noscript>
+
+  <!-- SEO / Google-Crawler: sichtbarer statischer Inhalt -->
+  <div id="landing" style="display:none" aria-hidden="true">
+    <h1>Hauspost Scanner</h1>
+    <p>Briefe, Rechnungen und Post mit dem Smartphone fotografieren und automatisch als PDF in Google Drive speichern. Kostenlos, ohne eigene Server.</p>
+    <a href="privacy.html">Datenschutzerklärung</a>
+  </div>
 
   <!-- SETUP SCREEN (shown when CLIENT_ID not configured) -->
   <div id="setup-screen" class="screen" style="display:none">
